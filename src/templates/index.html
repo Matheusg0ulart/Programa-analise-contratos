@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Multi-Agente Corporativo | RAG Avançado</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0284c7',
+              600: '#0369a1',
+              900: '#0c4a6e',
+            },
+            darkbg: '#0B0F19',
+            darkcard: '#111827',
+            darkborder: '#1F2937',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+    .agent-active {
+      animation: pulse-slow 2s infinite ease-in-out;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #111827;
+    }
+  </style>
+</head>
+<body class="bg-[#0B0F19] text-gray-100 min-h-screen flex font-sans overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-[#0E1526] border-r border-gray-800 flex flex-col h-screen">
+    <div class="p-6 border-b border-gray-800">
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-cube text-cyan-500"></i>
+        Antigravity
+      </h2>
+      <p class="text-xs text-gray-500 mt-1" id="companyNameDisplay">Carregando...</p>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pastas</h3>
+      <ul class="space-y-1 mb-8" id="folderList">
+        <li>
+          <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-800/50 text-cyan-400 font-medium border border-gray-700">
+            <i class="fa-regular fa-folder-open"></i> Todos os Contratos
+          </a>
+        </li>
+      </ul>
+      
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Histórico Recente</h3>
+      <ul class="space-y-1" id="historyList">
+        <li class="text-sm text-gray-400 px-3 py-2">Nenhuma auditoria recente.</li>
+      </ul>
+    </div>
+    
+    <div class="p-4 border-t border-gray-800">
+      <div class="flex items-center gap-3 mb-4 px-2">
+        <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold" id="userAvatar">U</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-white truncate" id="userNameDisplay">Usuário</p>
+        </div>
+      </div>
+      <button onclick="logout()" class="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+        <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i> Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="flex-1 flex flex-col h-screen overflow-y-auto custom-scrollbar">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-gray-800 bg-[#0E1526]/90 backdrop-blur sticky top-0 z-50 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid fa-brain text-xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Multi-Agent Audit Platform
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">v1.0 RAG</span>
+          </h1>
+          <p class="text-xs text-gray-400">Auditoria Autônoma de Contratos & Editais com LangGraph, ChromaDB e Redis</p>
+        </div>
+      </div>
+
+      <!-- Health Badges -->
+      <div class="flex items-center gap-3 text-xs">
+        <div id="wsBadge" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-800 text-gray-400 border border-gray-700">
+          <span class="w-2 h-2 rounded-full bg-gray-500" id="wsDot"></span>
+          <span id="wsText">WebSocket Offline</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-800/80 text-gray-300 border border-gray-700">
+          <i class="fa-solid fa-microchip text-cyan-400"></i>
+          <span>LLM:</span>
+          <span id="llmBadge" class="font-semibold text-white">Carregando...</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-800/80 text-gray-300 border border-gray-700">
+          <i class="fa-solid fa-bolt text-amber-400"></i>
+          <span>Cache:</span>
+          <span id="cacheBadge" class="font-semibold text-amber-300">Redis</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto w-full px-6 py-8 flex-1 flex flex-col gap-8">
+
+    <!-- Upload & Actions Header Card -->
+    <section class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow-xl relative overflow-hidden backdrop-blur">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+        
+        <!-- Left: Upload Box -->
+        <div class="lg:col-span-2">
+          <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-file-arrow-up"></i> Carregar Documento para Auditoria
+          </h2>
+          <div id="dropZone" class="border-2 border-dashed border-gray-700 hover:border-cyan-500/80 rounded-xl p-5 text-center cursor-pointer transition-all bg-gray-950/40 hover:bg-gray-900/50 group">
+            <input type="file" id="fileInput" class="hidden" accept=".pdf,.txt,.doc,.docx">
+            <div class="flex flex-col items-center justify-center gap-2">
+              <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-500 group-hover:text-cyan-400 transition-colors"></i>
+              <p class="text-sm text-gray-300">
+                <span class="font-semibold text-cyan-400">Clique para selecionar</span> ou arraste o contrato aqui
+              </p>
+              <p class="text-xs text-gray-500">Suporta PDFs digitalizados/escaneados (com OCR) e minutas em texto plano</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Quick Demo & Cache Controls -->
+        <div class="flex flex-col gap-3 justify-center border-t lg:border-t-0 lg:border-l border-gray-800 lg:pl-6 pt-4 lg:pt-0">
+          <div>
+            <span class="text-xs text-gray-400 block mb-1">Acesso Rápido para Teste:</span>
+            <button id="btnSampleContract" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium px-4 py-2.5 rounded-xl shadow-lg shadow-cyan-600/20 text-xs flex items-center justify-center gap-2 transition-all">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Executar Contrato Demonstrativo
+            </button>
+            <p class="text-[11px] text-gray-500 mt-1">Carrega minuta real de TI com cláusulas leoninas de multa e rescisão</p>
+          </div>
+
+          <div class="flex gap-2 mt-2">
+            <button id="btnClearCache" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 border border-gray-700 transition">
+              <i class="fa-solid fa-trash-can text-gray-400"></i> Limpar Cache
+            </button>
+            <button id="btnNewAudit" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 border border-gray-700 transition">
+              <i class="fa-solid fa-rotate-right text-gray-400"></i> Resetar Painel
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Progress Status Bar -->
+    <div id="progressSection" class="bg-gray-900/40 border border-gray-800 rounded-xl p-4 hidden">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-gray-300 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+          Status da Execução: <span id="currentStatusText" class="text-cyan-400 font-normal">Processando...</span>
+        </span>
+        <span id="progressPct" class="text-xs font-mono font-bold text-cyan-400">0%</span>
+      </div>
+      <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+        <div id="progressBar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full w-0 transition-all duration-300"></div>
+      </div>
+    </div>
+
+    <!-- Agent Pipeline Display (4 Autonomous Agents) -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+          <i class="fa-solid fa-network-wired text-cyan-400"></i> Pipeline Multi-Agente Autônomo
+        </h2>
+        <span class="text-xs text-gray-500">Orquestração cíclica via LangGraph</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Agent 1: Extractor -->
+        <div id="agentCardExtractor" class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">Agente 1</span>
+              <span id="agentStatusExtractor" class="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">Aguardando</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-9 h-9 rounded-lg bg-blue-900/40 border border-blue-700/50 flex items-center justify-center text-blue-400 text-base">
+                <i class="fa-solid fa-file-lines"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white">Extrator Inteligente</h3>
+                <p class="text-[11px] text-gray-400">PDFs, OCR & Chunks</p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Quebra semântica por cláusulas e normalização textual estruturada.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] text-gray-400 flex justify-between">
+            <span>Chunks: <strong id="extractorChunkCount" class="text-gray-200">-</strong></span>
+            <span>OCR: <strong id="extractorOcrStatus" class="text-gray-200">-</strong></span>
+          </div>
+        </div>
+
+        <!-- Agent 2: Researcher / RAG -->
+        <div id="agentCardResearcher" class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">Agente 2</span>
+              <span id="agentStatusResearcher" class="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">Aguardando</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-9 h-9 rounded-lg bg-purple-900/40 border border-purple-700/50 flex items-center justify-center text-purple-400 text-base">
+                <i class="fa-solid fa-magnifying-glass-chart"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white">Pesquisador / RAG</h3>
+                <p class="text-[11px] text-gray-400">ChromaDB & Re-ranking</p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Busca vetorial profunda com cache semântico no Redis e ponderação de risco.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] text-gray-400 flex justify-between">
+            <span>Trechos Rerank: <strong id="researcherHits" class="text-gray-200">-</strong></span>
+            <span>Cache Hit: <strong id="researcherCacheHits" class="text-gray-200">-</strong></span>
+          </div>
+        </div>
+
+        <!-- Agent 3: Compliance -->
+        <div id="agentCardCompliance" class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">Agente 3</span>
+              <span id="agentStatusCompliance" class="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">Aguardando</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-9 h-9 rounded-lg bg-amber-900/40 border border-amber-700/50 flex items-center justify-center text-amber-400 text-base">
+                <i class="fa-solid fa-scale-balanced"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white">Jurídico & Compliance</h3>
+                <p class="text-[11px] text-gray-400">Detecção de Riscos</p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Auditoria de multas abusivas, rescisão unilateral, LGPD e limites de responsabilidade.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] text-gray-400 flex justify-between">
+            <span>Score de Risco: <strong id="complianceRiskScore" class="text-gray-200">-</strong></span>
+            <span>Achados: <strong id="complianceFindingsCount" class="text-gray-200">-</strong></span>
+          </div>
+        </div>
+
+        <!-- Agent 4: Auditor Revisor -->
+        <div id="agentCardAuditor" class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">Agente 4</span>
+              <span id="agentStatusAuditor" class="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400">Aguardando</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-9 h-9 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center justify-center text-emerald-400 text-base">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-white">Auditor Revisor</h3>
+                <p class="text-[11px] text-gray-400">Fact-Check & Parecer</p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Critica as conclusões, previne alucinações e loops infinitos antes de consolidar.</p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] text-gray-400 flex justify-between">
+            <span>Ciclos: <strong id="auditorCycles" class="text-gray-200">0/2</strong></span>
+            <span>Qualidade: <strong id="auditorScore" class="text-gray-200">-</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Terminal & Streaming Console -->
+    <section class="bg-gray-950 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="bg-gray-900/80 px-4 py-2.5 border-b border-gray-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+          <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+          <span class="text-xs font-mono text-gray-400 ml-2">Console de Streaming em Tempo Real (WebSocket)</span>
+        </div>
+        <button id="btnClearTerminal" class="text-xs text-gray-400 hover:text-gray-200 transition">
+          <i class="fa-solid fa-eraser"></i> Limpar
+        </button>
+      </div>
+      <div id="terminalBody" class="p-4 font-mono text-xs text-gray-300 custom-scrollbar h-52 overflow-y-auto space-y-1 bg-black/60">
+        <p class="text-gray-500">> Sistema Multi-Agente Corporativo pronto. Aguardando inicialização...</p>
+      </div>
+    </section>
+
+    <!-- Consolidated Report Section (Hidden initially) -->
+    <section id="reportSection" class="hidden flex flex-col gap-6">
+
+      <!-- Executive Header Banner -->
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-gray-800">
+          <div>
+            <div class="flex items-center gap-3">
+              <span id="verdictBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-950 text-red-400 border border-red-800">
+                RISCO CRÍTICO
+              </span>
+              <span class="text-xs text-gray-400">Documento: <strong id="reportDocName" class="text-white">-</strong></span>
+            </div>
+            <h2 class="text-xl font-bold text-white mt-2">Parecer Executivo de Auditoria Contratual</h2>
+            <p id="reportSummary" class="text-xs text-gray-300 mt-1 max-w-3xl leading-relaxed">-</p>
+          </div>
+
+          <!-- Risk Score Gauges -->
+          <div class="flex items-center gap-6">
+            <div class="text-center">
+              <div id="riskScoreCircle" class="w-16 h-16 rounded-2xl bg-red-950/60 border border-red-700/60 flex items-center justify-center font-bold text-xl text-red-400 shadow-lg shadow-red-950/50">
+                0
+              </div>
+              <span class="text-[11px] text-gray-400 mt-1 block">Score de Risco</span>
+            </div>
+            <div class="text-center">
+              <div id="auditScoreCircle" class="w-16 h-16 rounded-2xl bg-emerald-950/60 border border-emerald-700/60 flex items-center justify-center font-bold text-xl text-emerald-400 shadow-lg shadow-emerald-950/50">
+                0
+              </div>
+              <span class="text-[11px] text-gray-400 mt-1 block">Qualidade Auditor</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Counters Breakdown -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
+          <div class="bg-red-950/30 border border-red-900/40 rounded-xl p-3 flex items-center justify-between">
+            <span class="text-xs text-red-300">Crítico</span>
+            <span id="badgeCritico" class="font-bold text-red-400 text-lg">0</span>
+          </div>
+          <div class="bg-amber-950/30 border border-amber-900/40 rounded-xl p-3 flex items-center justify-between">
+            <span class="text-xs text-amber-300">Alto</span>
+            <span id="badgeAlto" class="font-bold text-amber-400 text-lg">0</span>
+          </div>
+          <div class="bg-yellow-950/30 border border-yellow-900/40 rounded-xl p-3 flex items-center justify-between">
+            <span class="text-xs text-yellow-300">Médio</span>
+            <span id="badgeMedio" class="font-bold text-yellow-400 text-lg">0</span>
+          </div>
+          <div class="bg-emerald-950/30 border border-emerald-900/40 rounded-xl p-3 flex items-center justify-between">
+            <span class="text-xs text-emerald-300">Baixo</span>
+            <span id="badgeBaixo" class="font-bold text-emerald-400 text-lg">0</span>
+          </div>
+        </div>
+
+        <!-- Download & Copy Actions -->
+        <div class="flex flex-wrap gap-3 mt-6">
+          <button id="btnDownloadMd" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-cyan-600/20">
+            <i class="fa-solid fa-file-arrow-down"></i> Baixar Parecer Completo (.MD)
+          </button>
+          <button id="btnCopySummary" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border border-gray-700 transition">
+            <i class="fa-solid fa-copy"></i> Copiar Resumo Executivo
+          </button>
+        </div>
+      </div>
+
+      <!-- Compliance Findings Detailed Accordion -->
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
+        <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-cyan-400"></i> Apontamentos e Cláusulas Auditadas
+        </h3>
+        <div id="findingsContainer" class="space-y-4">
+          <!-- Dinamicamente injetado pelo JavaScript -->
+        </div>
+      </div>
+
+      <!-- Priority Action Plan -->
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
+        <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Recomendações e Plano de Ação Mitigatório
+        </h3>
+        <ul id="recommendationsList" class="list-disc list-inside space-y-2 text-xs text-gray-300">
+          <!-- Injetado dinamicamente -->
+        </ul>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800 bg-[#0E1526] px-6 py-4 text-center text-xs text-gray-500">
+    Sistema Multi-Agente Corporativo com RAG Avançado • Python 3.12+, FastAPI, LangGraph, ChromaDB, Redis
+  </footer>
+
+  <script src="/static/app.js"></script>
+  </div> <!-- Fim Wrapper -->
+</body>
+</html>

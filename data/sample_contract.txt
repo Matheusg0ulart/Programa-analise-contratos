@@ -1,0 +1,21 @@
+CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE TECNOLOGIA DA INFORMAÇÃO E SUPORTE EM NUVEM
+
+CONTRATANTE: BANCO REGIONAL DE INVESTIMENTOS S.A.
+CONTRATADA: DATA CLOUD SYSTEMS DO BRASIL LTDA.
+
+CLÁUSULA PRIMEIRA – DO OBJETO
+1.1. O presente instrumento regula a prestação de serviços de infraestrutura dedicada e hospedagem corporativa.
+
+CLÁUSULA SEGUNDA – DAS PENALIDADES E RETENÇÃO DE FATURAMENTO
+2.1. O descumprimento de qualquer nível de serviço (SLA) sujeitará a Contratada à aplicação de multa de 35% sobre o valor global do contrato.
+2.2. O Contratante poderá promover a retenção integral de até 100% dos pagamentos em processamento sem necessidade de prévia instauração de procedimento administrativo contraditório.
+
+CLÁUSULA TERCEIRA – DA RESCISÃO IMOTIVADA
+3.1. A Contratante poderá rescindir unilateralmente este ajuste a qualquer tempo com aviso prévio de 5 (cinco) dias, sem dever de indenizar prejuízos ou custos de desmobilização.
+3.2. A Contratada fica impedida de rescindir o contrato sem concessão de aviso prévio de no mínimo 120 (cento e vinte) dias.
+
+CLÁUSULA QUARTA – DA RESPONSABILIDADE CIVIL
+4.1. A Contratada responderá ilimitadamente por todos os danos diretos e indiretos, bem como lucros cessantes oriundos de eventuais falhas nos serviços.
+
+CLÁUSULA QUINTA – DA PROTEÇÃO DE DADOS (LGPD)
+5.1. As partes comprometem-se a cumprir a legislação de dados, facultando ao operador prazo de 60 dias para comunicar vazamentos de informações sensíveis.

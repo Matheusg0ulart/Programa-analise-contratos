@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+multiagent.db
+multiagent.db-journal
+chroma_db/
+redis_data/
+tests/.pytest_cache/

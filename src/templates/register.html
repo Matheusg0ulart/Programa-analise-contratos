@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Antigravity Corp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { dark: '#0f111a', card: '#1a1d27', primary: '#3b82f6', }}}}
+    </script>
+</head>
+<body class="bg-dark text-gray-200 min-h-screen flex items-center justify-center font-sans py-10">
+    <div class="bg-card p-8 rounded-xl shadow-2xl border border-gray-800 w-full max-w-lg">
+        <h2 class="text-2xl font-bold text-center mb-2">Onboarding Corporativo</h2>
+        <p class="text-gray-400 text-center mb-8 text-sm">Crie o tenant da sua empresa para iniciar as auditorias</p>
+        
+        <form id="registerForm" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Nome da Empresa</label>
+                    <input type="text" id="company_name" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">CNPJ</label>
+                    <input type="text" id="cnpj" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+                </div>
+                <div class="col-span-2 border-t border-gray-800 pt-4 mt-2">
+                    <p class="text-sm text-primary mb-4">Dados do Administrador</p>
+                </div>
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Seu Nome</label>
+                    <input type="text" id="user_name" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+                </div>
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">E-mail Profissional</label>
+                    <input type="email" id="email" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Senha</label>
+                    <input type="password" id="password" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+                </div>
+            </div>
+            
+            <div id="error-msg" class="text-red-400 text-sm hidden text-center mt-2"></div>
+            <div id="success-msg" class="text-green-400 text-sm hidden text-center mt-2">Empresa cadastrada! Redirecionando...</div>
+            
+            <button type="submit" class="w-full bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors mt-6">
+                Criar Workspace
+            </button>
+            <button type="button" id="btnDemo" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 font-medium py-2 px-4 rounded-lg transition-colors mt-2 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-flask"></i> Testar Demo (Pular Cadastro)
+            </button>
+        </form>
+        
+        <p class="mt-6 text-center text-sm text-gray-500">
+            Já possui cadastro? <a href="/login" class="text-primary hover:underline">Fazer login</a>
+        </p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        document.getElementById('btnDemo').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/v1/auth/demo', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user_name', data.user_name);
+                    window.location.href = '/dashboard';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                company_name: document.getElementById('company_name').value,
+                cnpj: document.getElementById('cnpj').value,
+                user_name: document.getElementById('user_name').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            };
+            
+            try {
+                const res = await fetch('/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('error-msg').classList.add('hidden');
+                    document.getElementById('success-msg').classList.remove('hidden');
+                    setTimeout(() => window.location.href = '/login', 2000);
+                } else {
+                    const errorBox = document.getElementById('error-msg');
+                    errorBox.innerText = data.detail || 'Erro ao cadastrar';
+                    errorBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                document.getElementById('error-msg').innerText = 'Erro de conexão';
+                document.getElementById('error-msg').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

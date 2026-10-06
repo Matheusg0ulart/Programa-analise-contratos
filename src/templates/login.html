@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Antigravity Corp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f111a',
+                        card: '#1a1d27',
+                        primary: '#3b82f6',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark text-gray-200 min-h-screen flex items-center justify-center font-sans">
+    <div class="bg-card p-8 rounded-xl shadow-2xl border border-gray-800 w-full max-w-md">
+        <div class="flex justify-center mb-6">
+            <div class="bg-primary/20 p-3 rounded-full">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+        </div>
+        <h2 class="text-2xl font-bold text-center mb-2">Acesso Corporativo</h2>
+        <p class="text-gray-400 text-center mb-8 text-sm">Auditoria Multi-Agente Avançada</p>
+        
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">E-mail Profissional</label>
+                <input type="email" id="email" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Senha</label>
+                <input type="password" id="password" class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary text-gray-200" required>
+            </div>
+            
+            <div id="error-msg" class="text-red-400 text-sm hidden text-center">Credenciais inválidas.</div>
+            
+            <button type="submit" class="w-full bg-primary hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors mt-4">
+                Entrar no Sistema
+            </button>
+            <button type="button" id="btnDemo" class="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 font-medium py-2 px-4 rounded-lg transition-colors mt-2 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-flask"></i> Testar Demo (Sem Login)
+            </button>
+        </form>
+        
+        <p class="mt-6 text-center text-sm text-gray-500">
+            Sua empresa ainda não tem conta? <br>
+            <a href="/register" class="text-primary hover:underline mt-1 inline-block">Cadastrar nova empresa</a>
+        </p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        document.getElementById('btnDemo').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/v1/auth/demo', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user_name', data.user_name);
+                    window.location.href = '/dashboard';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const formData = new URLSearchParams();
+            formData.append('username', email);
+            formData.append('password', password);
+            
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user_name', data.user_name);
+                    window.location.href = '/dashboard';
+                } else {
+                    document.getElementById('error-msg').classList.remove('hidden');
+                }
+            } catch (err) {
+                document.getElementById('error-msg').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
